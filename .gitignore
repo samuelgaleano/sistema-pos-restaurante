@@ -1,0 +1,8 @@
+# Runtime / logs
+*.log
+php_errors.log
+# Subidas y datos generados en ejecución
+uploads/*
+!uploads/.gitkeep
+# Config con credenciales reales del hosting (usa database.php como plantilla)
+# (se incluye con valores locales por defecto; reemplázalos en tu servidor)

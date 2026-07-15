@@ -1,0 +1,35 @@
+# ============================================================
+# Seguridad y configuración para cPanel
+# ============================================================
+
+# Proteger archivos sensibles
+<FilesMatch "\.(sql|md|env|log)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Proteger carpeta config
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^config/ - [F,L]
+</IfModule>
+
+# Prevenir listado de directorios
+Options -Indexes
+
+# Página de error personalizada (opcional)
+# ErrorDocument 403 /index.php
+# ErrorDocument 404 /index.php
+
+# PHP settings recomendados (algunos hosts permiten esto)
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 10M
+    php_value max_execution_time 60
+    php_flag display_errors off
+</IfModule>
+
+# Forzar HTTPS (descomentar si tu hosting tiene SSL activo)
+# RewriteEngine On
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
