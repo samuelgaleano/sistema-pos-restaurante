@@ -149,3 +149,30 @@ error_reporting(E_ALL); ini_set('display_errors', 1);
 ---
 
 Desarrollado como sistema base profesional — personalízalo según las necesidades específicas de tu negocio.
+
+---
+
+## 🐳 Demo con Docker
+
+Para levantar el sistema completo (app + MySQL) en un solo paso, sin instalar PHP ni MySQL localmente:
+
+```bash
+docker compose up --build
+```
+
+Luego abre **http://localhost:8080/** — la base de datos se crea e inicializa sola en el primer arranque (esquema + datos de ejemplo desde `database.sql`).
+
+**Usuarios de demostración** (contraseña para los tres: `password`):
+
+| Usuario    | Rol            |
+|------------|----------------|
+| `admin`    | Administrador  |
+| `cajero1`  | Cajero         |
+| `mesero1`  | Mesero         |
+
+Notas de esta configuración Docker:
+
+- Las credenciales de MySQL definidas en `docker-compose.yml` (`pos_root_pw`, `pos_user` / `pos_pass`) son **solo para esta demo local**; no se usan en un hosting real y no deben reutilizarse.
+- `install.php` no está disponible dentro del contenedor (excluido vía `.dockerignore`) porque la base de datos ya queda lista automáticamente.
+- El prefijo de URL pública de la app (usado para enlaces y redirects) se controla con la variable de entorno `POS_BASE_PATH` (por defecto `/pos-demo` en el `docker-compose.yml`, pensado para servir esta demo embebida same-origin, vía proxy inverso, desde otro sitio). Sin Docker, `config/database.php` sigue funcionando igual que siempre, con rutas relativas a la raíz.
+- Para detener y borrar los contenedores (conservando los datos de MySQL en el volumen): `docker compose down`. Para borrar también los datos: `docker compose down -v`.

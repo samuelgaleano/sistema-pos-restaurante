@@ -2,6 +2,28 @@
 require_once __DIR__ . '/../config/database.php';
 
 if (session_status() === PHP_SESSION_NONE) {
+    // ------------------------------------------------------------------
+    // Cookie de sesión compatible con embebido en <iframe> (demo same-origin
+    // vía proxy inverso, p.ej. https://portafolio.com/pos-demo/ -> este contenedor).
+    //
+    // Los navegadores modernos exigen SameSite=None para que una cookie viaje dentro
+    // de un iframe, y la spec obliga a que SameSite=None vaya siempre acompañado de
+    // Secure (si no, el navegador descarta la cookie directamente). Por eso se fija
+    // ANTES de session_start(), sin condicionarlo por entorno:
+    //   - En producción, el iframe se sirve por HTTPS (detrás del proxy del portafolio),
+    //     así que Secure se cumple de forma natural.
+    //   - En la demo local con `docker compose up` (http://localhost:8080, sin TLS),
+    //     Secure también funciona: Chrome/Edge/Firefox tratan "localhost" y "127.0.0.1"
+    //     como "contextos seguros" y sí guardan/envían cookies Secure ahí aunque no haya
+    //     HTTPS real. Por eso NO hace falta condicionar esto por HTTP/HTTPS.
+    //   - Limitación aceptada: si algún día se sirve este POS por HTTP plano en un host
+    //     distinto de localhost (sin TLS ni proxy), la cookie de sesión no se guardará.
+    //     No aplica a los escenarios de esta demo (Docker local o iframe en producción).
+    session_set_cookie_params([
+        'samesite' => 'None',
+        'secure'   => true,
+        'httponly' => true,
+    ]);
     session_start();
 }
 

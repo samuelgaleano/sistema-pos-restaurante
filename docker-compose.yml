@@ -1,0 +1,63 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: pos-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: pos_db
+      # Credenciales SOLO para esta demo local. No reutilizar en un entorno real.
+      MYSQL_ROOT_PASSWORD: pos_root_pw
+      MYSQL_USER: pos_user
+      MYSQL_PASSWORD: pos_pass
+    volumes:
+      - pos_db_data:/var/lib/mysql
+      # database.sql ya trae "CREATE DATABASE IF NOT EXISTS pos_db" + "USE pos_db",
+      # consistente con MYSQL_DATABASE=pos_db de arriba. MySQL ejecuta este script una
+      # sola vez, en el primer arranque (volumen vacío), y crea esquema + datos demo
+      # (usuarios admin / cajero1 / mesero1, password bcrypt de "password").
+      - ./database.sql:/docker-entrypoint-initdb.d/database.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - pos-net
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pos-web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    environment:
+      DB_HOST: db
+      DB_NAME: pos_db
+      DB_USER: pos_user
+      DB_PASS: pos_pass
+      # Prefijo público bajo el que se embebe esta demo same-origin desde otro sitio
+      # (p.ej. https://portafolio.com/pos-demo/ -> proxy inverso -> este servicio).
+      # Solo afecta los enlaces/redirects que genera la app (BASE_URL); el docroot de
+      # Apache dentro del contenedor sigue siendo "/". Ver config/database.php.
+      POS_BASE_PATH: /pos-demo
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/index.php"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - pos-net
+
+volumes:
+  pos_db_data:
+
+networks:
+  pos-net:
+    driver: bridge

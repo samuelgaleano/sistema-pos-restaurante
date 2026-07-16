@@ -1,0 +1,39 @@
+# Control de versiones
+.git
+.gitignore
+.gitattributes
+
+# No aplica a este proyecto (PHP vanilla sin build step), se excluye por si acaso
+node_modules/
+
+# Documentación — no se sirve dentro del contenedor de la demo
+*.md
+
+# Instalador: NO debe quedar accesible en la demo. La BD ya se inicializa sola vía
+# docker-entrypoint-initdb.d (ver docker-compose.yml), así que install.php no hace
+# falta dentro de la imagen y queda excluido del build context por completo.
+install.php
+
+# Script SQL fuente: solo lo usa el bind mount de docker-compose hacia el contenedor
+# de MySQL (./database.sql -> /docker-entrypoint-initdb.d/). No necesita (ni conviene)
+# viajar dentro de la imagen del servicio web.
+database.sql
+
+# Logs y datos runtime
+*.log
+php_errors.log
+uploads/
+
+# Entorno local / secretos / editores / SO
+.env
+.env.*
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Artefactos de Docker (no deben terminar copiados dentro de /var/www/html)
+Dockerfile
+docker-compose.yml
+docker-compose.yaml
+.dockerignore
