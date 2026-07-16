@@ -215,6 +215,9 @@ require_once '../../includes/header.php';
 </div>
 
 <script>
+// Chart.js se carga en el footer (después de este bloque); esperar a 'load' para
+// que la librería ya exista al instanciar el gráfico.
+window.addEventListener('load', function () {
 const labels = <?= json_encode(array_column($ventasSemana, 'dia')) ?>;
 const data   = <?= json_encode(array_map(fn($r)=>(float)$r['total'], $ventasSemana)) ?>;
 const ctx = document.getElementById('chartVentas').getContext('2d');
@@ -241,6 +244,7 @@ new Chart(ctx, {
       y:{ grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#7b82a0', callback:v=>'$'+v.toLocaleString('es-CO')} }
     }
   }
+});
 });
 </script>
 
