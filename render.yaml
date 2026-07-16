@@ -1,0 +1,16 @@
+# Blueprint de Render para la demo del POS.
+# UN solo servicio Docker autocontenido (Apache+PHP+MariaDB en la misma imagen):
+# no requiere base de datos gestionada aparte (Render solo ofrece Postgres gestionado).
+# Plan free: la demo "duerme" tras 15 min de inactividad y despierta en ~30 s, y la
+# base se resiembra limpia en cada arranque en frío — ideal para un sandbox público.
+#
+# Despliegue: New + → Blueprint → conecta el repo → Render lee este archivo.
+# Render inyecta la variable PORT; el entrypoint hace que Apache escuche en ella.
+services:
+  - type: web
+    name: pos-restaurante-demo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /index.php
+    autoDeploy: true

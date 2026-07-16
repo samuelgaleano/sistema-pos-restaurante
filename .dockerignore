@@ -14,10 +14,9 @@ node_modules/
 # falta dentro de la imagen y queda excluido del build context por completo.
 install.php
 
-# Script SQL fuente: solo lo usa el bind mount de docker-compose hacia el contenedor
-# de MySQL (./database.sql -> /docker-entrypoint-initdb.d/). No necesita (ni conviene)
-# viajar dentro de la imagen del servicio web.
-database.sql
+# database.sql y demo-seed.sql SÍ viajan en la imagen: el entrypoint siembra la
+# MariaDB embebida a partir de ellos al arrancar. El .htaccess bloquea *.sql, así que
+# nunca son accesibles por HTTP dentro de la demo.
 
 # Logs y datos runtime
 *.log
