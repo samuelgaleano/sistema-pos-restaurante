@@ -199,7 +199,7 @@ $empresa = getConfig('empresa_nombre', 'POS Pro');
       <button type="submit" class="btn-login"><i class="fas fa-sign-in-alt"></i> &nbsp;Ingresar al Sistema</button>
     </form>
     <div class="demo-hints">
-      <p>Usuarios de demostración (contraseña: <b>password</b>)</p>
+      <p>Demo: haz clic en un rol para entrar directo (contraseña: <b>password</b>)</p>
       <div class="demo-grid">
         <div class="demo-btn" onclick="fillLogin('admin','password')"><span>ADMIN</span>admin</div>
         <div class="demo-btn" onclick="fillLogin('cajero1','password')"><span>CAJERO</span>cajero1</div>
@@ -209,9 +209,11 @@ $empresa = getConfig('empresa_nombre', 'POS Pro');
   </div>
 </div>
 <script>
-function fillLogin(u,p){
-  document.querySelector('[name=usuario]').value=u;
-  document.querySelector('[name=password]').value=p;
+// En la demo, un clic en el rol rellena y entra directo (sin escribir credenciales).
+function fillLogin(u, p) {
+  document.querySelector('[name=usuario]').value = u;
+  document.querySelector('[name=password]').value = p;
+  document.querySelector('form').submit();
 }
 </script>
 </body>
