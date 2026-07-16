@@ -2,7 +2,13 @@
 
 Sistema de punto de venta completo con facturación, control de inventario, gestión de mesas, roles de usuario (Administrador / Cajero / Mesero) y dashboard administrativo con control de ventas, turnos y cierre de caja.
 
-Diseñado para funcionar en hosting compartido con **cPanel** (PHP 7.4+ / MySQL o MariaDB).
+Diseñado para funcionar en hosting compartido con **cPanel** (PHP 7.4+ / MySQL o MariaDB) y para desplegarse **en línea** como demo autocontenida (Docker) con un clic.
+
+## 🚀 Desplegar la demo en línea (Render)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/samuelgaleano/sistema-pos-restaurante)
+
+Un solo contenedor **Apache + PHP + MariaDB** (ver `render.yaml` y `Dockerfile`): no requiere base de datos externa, la siembra sola al arrancar y se resetea limpio. Plan free de Render. Login de un clic en la pantalla de acceso.
 
 ---
 
