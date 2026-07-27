@@ -50,6 +50,21 @@ ENV DB_HOST=127.0.0.1 \
 
 WORKDIR /var/www/html
 COPY --chown=www-data:www-data . /var/www/html/
+
+# Guardarrail de la demo publica: repara los usuarios anunciados y el catalogo si un
+# visitante los deja inservibles para el siguiente. Se engancha con auto_prepend_file
+# para no tocar el codigo de la aplicacion.
+# Se valida la sintaxis en el build: como corre en CADA peticion, un error ahi seria un
+# 500 en todo el sitio. Si no compila, la imagen no se publica.
+RUN php -l /var/www/html/_demo/demo-guard.php \
+    && echo 'auto_prepend_file=/var/www/html/_demo/demo-guard.php' > "$PHP_INI_DIR/conf.d/zz-demo-guard.ini"
+
+# _demo/ es andamiaje de la demo: no debe servirse por HTTP.
+RUN { \
+        echo '<Directory /var/www/html/_demo>'; \
+        echo '    Require all denied'; \
+        echo '</Directory>'; \
+    } >> /etc/apache2/apache2.conf
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 # Normaliza CRLF→LF (por si se editó en Windows) y marca ejecutable.
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
