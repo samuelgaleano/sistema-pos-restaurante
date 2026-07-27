@@ -116,7 +116,16 @@ function formatMoney($amount) {
 
 function generateInvoiceNumber() {
     $db = getDB();
-    $db->beginTransaction();
+    // getDB() devuelve SIEMPRE la misma conexion (singleton estatico) y PDO no soporta
+    // transacciones anidadas. Quien nos llama a menudo ya tiene una abierta -- ajax/ventas.php
+    // envuelve la venta entera en una -- y abrir otra aqui lanzaba "There is already an active
+    // transaction", que reventaba TODAS las ventas. Si ya hay una transaccion en curso nos
+    // sumamos a ella y dejamos que el commit lo haga el llamador; el FOR UPDATE de abajo
+    // sigue tomando el lock dentro de esa transaccion, que es justo lo que se buscaba.
+    $transaccionPropia = !$db->inTransaction();
+    if ($transaccionPropia) {
+        $db->beginTransaction();
+    }
     try {
         $prefijo = getConfig('factura_prefijo', 'FAC');
         $stmt = $db->query("SELECT valor FROM configuracion WHERE clave='factura_consecutivo' FOR UPDATE");
@@ -124,10 +133,14 @@ function generateInvoiceNumber() {
         $num = (int)$row['valor'];
         $db->prepare("UPDATE configuracion SET valor = ? WHERE clave='factura_consecutivo'")
            ->execute([$num + 1]);
-        $db->commit();
+        if ($transaccionPropia) {
+            $db->commit();
+        }
         return $prefijo . '-' . str_pad($num, 6, '0', STR_PAD_LEFT);
     } catch (Exception $e) {
-        $db->rollBack();
+        if ($transaccionPropia && $db->inTransaction()) {
+            $db->rollBack();
+        }
         throw $e;
     }
 }

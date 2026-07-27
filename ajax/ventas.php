@@ -105,6 +105,11 @@ try {
     echo json_encode(['success'=>true, 'factura_id'=>$facturaId, 'numero_factura'=>$numFactura]);
 
 } catch (Exception $e) {
-    $db->rollBack();
+    // Si la excepcion salto ANTES de que la transaccion llegara a abrirse, un rollBack() a
+    // secas lanza "There is no active transaction" y el cliente recibe un 500 en vez del
+    // motivo real del fallo.
+    if ($db->inTransaction()) {
+        $db->rollBack();
+    }
     echo json_encode(['success'=>false, 'error'=>$e->getMessage()]);
 }

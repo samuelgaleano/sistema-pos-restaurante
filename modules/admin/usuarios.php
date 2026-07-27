@@ -83,7 +83,22 @@ require_once '../../includes/header.php';
           </td>
           <td style="display:flex;gap:4px">
             <?php if($u['id'] != $_SESSION['user_id']): ?>
-            <button class="btn btn-sm btn-secondary" onclick='editarUsuario(<?= json_encode($u) ?>)'><i class="fas fa-edit"></i></button>
+            <?php
+              // Solo los campos que rellena el modal. Antes iba json_encode($u) entero, lo que
+              // metia el hash bcrypt de cada usuario en el HTML de la pagina; el formulario ni
+              // siquiera lo usa (deja la contraseña vacia para no cambiarla).
+              $uModal = [
+                'id'       => $u['id'],
+                'nombre'   => $u['nombre'],
+                'apellido' => $u['apellido'],
+                'usuario'  => $u['usuario'],
+                'email'    => $u['email'],
+                'telefono' => $u['telefono'],
+                'rol_id'   => $u['rol_id'],
+                'activo'   => $u['activo'],
+              ];
+            ?>
+            <button class="btn btn-sm btn-secondary" onclick='editarUsuario(<?= json_encode($uModal) ?>)'><i class="fas fa-edit"></i></button>
             <form method="POST" style="display:inline">
               <input type="hidden" name="action" value="toggle">
               <input type="hidden" name="id" value="<?= $u['id'] ?>">
