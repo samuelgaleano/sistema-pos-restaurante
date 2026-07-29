@@ -111,5 +111,8 @@ try {
     if ($db->inTransaction()) {
         $db->rollBack();
     }
-    echo json_encode(['success'=>false, 'error'=>$e->getMessage()]);
+    // El detalle del error (mensaje de BD/PDO) va al log del servidor, NO al cliente:
+    // devolver getMessage() crudo filtra estructura de la consulta/esquema al navegador.
+    error_log('[ventas] ' . $e->getMessage());
+    echo json_encode(['success'=>false, 'error'=>'No se pudo registrar la venta. Intenta de nuevo.']);
 }
