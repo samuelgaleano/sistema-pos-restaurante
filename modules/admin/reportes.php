@@ -7,8 +7,11 @@ $db = getDB();
 $pageTitle = 'Reportes';
 $activeMenu = 'reportes';
 
-$desde = $_GET['desde'] ?? date('Y-m-01');
-$hasta = $_GET['hasta'] ?? date('Y-m-d');
+// Se validan como fecha ISO en el origen: asi no pueden llevar HTML/JS a los value="" ni
+// al href de exportar (XSS reflejado). Cualquier cosa que no sea AAAA-MM-DD cae al defecto.
+$fechaISO = fn($v, $def) => (is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) ? $v : $def;
+$desde = $fechaISO($_GET['desde'] ?? null, date('Y-m-01'));
+$hasta = $fechaISO($_GET['hasta'] ?? null, date('Y-m-d'));
 
 // Ventas por día
 $ventasDia = $db->prepare("

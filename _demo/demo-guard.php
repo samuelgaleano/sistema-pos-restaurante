@@ -105,6 +105,34 @@ function pixies_pos_reparar_catalogo(PDO $pdo)
     $pdo->exec('UPDATE productos SET stock_actual = 50 WHERE tiene_stock = 1 AND stock_actual <= 0');
 }
 
+function pixies_pos_reparar_config(PDO $pdo)
+{
+    // impuesto_porcentaje es DECIMAL(5,2) (max 999.99). Un visitante lo ponia a 99999
+    // desde Configuracion y a partir de ahi NINGUNA venta se podia cobrar (INSERT fuera
+    // de rango) para el resto de visitantes, hasta reparacion manual. La validacion en
+    // configuracion.php ya lo impide en origen; esto repara cualquier valor malo que
+    // hubiera quedado antes del arreglo o por una via distinta. Solo se toca si esta mal.
+    $imp = $pdo->query("SELECT valor FROM configuracion WHERE clave = 'impuesto_porcentaje'")->fetchColumn();
+    if ($imp !== false && (!is_numeric($imp) || (float) $imp < 0 || (float) $imp > 100)) {
+        $pdo->prepare("UPDATE configuracion SET valor = '0' WHERE clave = 'impuesto_porcentaje'")->execute();
+    }
+    // empresa_nombre sale en el <title> del login: se restaura si lo dejaron vacio o con
+    // etiquetas (defiguracion / intento de XSS en el titulo).
+    $emp = $pdo->query("SELECT valor FROM configuracion WHERE clave = 'empresa_nombre'")->fetchColumn();
+    if ($emp !== false && (trim((string) $emp) === '' || preg_match('/[<>]/', (string) $emp))) {
+        $pdo->prepare("UPDATE configuracion SET valor = 'Mi Restaurante' WHERE clave = 'empresa_nombre'")->execute();
+    }
+}
+
+function pixies_pos_reparar_mesas(PDO $pdo)
+{
+    // Un visitante podia mandar mesas a 'mantenimiento', un estado que la UI del mesero
+    // no sabe deshacer (clickMesa no tiene rama para el): la mesa quedaba inutilizable
+    // para el siguiente. Se devuelven a 'disponible' (no se tocan ocupada/reservada, que
+    // son estados legitimos del recorrido de la demo).
+    $pdo->exec("UPDATE mesas SET estado = 'disponible' WHERE estado = 'mantenimiento'");
+}
+
 function pixies_pos_reparar()
 {
     $pdo = pixies_pos_pdo();
@@ -114,6 +142,8 @@ function pixies_pos_reparar()
     try {
         pixies_pos_reparar_usuarios($pdo);
         pixies_pos_reparar_catalogo($pdo);
+        pixies_pos_reparar_config($pdo);
+        pixies_pos_reparar_mesas($pdo);
     } catch (Throwable $e) {
         // Una demo rota es mejor que un 500 en todo el sitio: se traga y se sigue.
     }
@@ -124,8 +154,9 @@ $pixies_pos_script = basename($_SERVER['SCRIPT_NAME'] ?? '');
 if ($pixies_pos_script === 'index.php') {
     // Pantalla de acceso: es el momento natural para dejar la demo utilizable.
     pixies_pos_reparar();
-} elseif ($pixies_pos_script === 'usuarios.php' || $pixies_pos_script === 'productos.php') {
+} elseif (in_array($pixies_pos_script, ['usuarios.php', 'productos.php', 'configuracion.php', 'mesas.php'], true)) {
     // Despues de que el visitante haya podido romper algo, no antes: asi ve el efecto
     // de lo que hizo durante su visita y aun asi queda reparado para el siguiente.
+    // configuracion.php y mesas.php cubren el brick del impuesto y las mesas atascadas.
     register_shutdown_function('pixies_pos_reparar');
 }

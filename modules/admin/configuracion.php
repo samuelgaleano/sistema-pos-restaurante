@@ -15,10 +15,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'impuesto_nombre','impuesto_porcentaje','moneda_simbolo','moneda_nombre',
         'propina_sugerida'
     ];
+    // Campos numericos que son porcentajes: hay que acotarlos en el servidor. impuesto_porcentaje
+    // es DECIMAL(5,2) y un valor fuera de rango (p.ej. 99999) hacia que NINGUNA venta se pudiera
+    // cobrar despues (INSERT fuera de rango) para todos los visitantes. El max=100 del <input> es
+    // solo del navegador y no protege nada. Se acota 0..100 y se cae a 0 si no es un numero.
+    $porcentajes = ['impuesto_porcentaje', 'propina_sugerida'];
     foreach ($claves as $clave) {
-        if (isset($_POST[$clave])) {
-            $db->prepare("UPDATE configuracion SET valor=? WHERE clave=?")->execute([sanitize($_POST[$clave]), $clave]);
+        if (!isset($_POST[$clave])) {
+            continue;
         }
+        if (in_array($clave, $porcentajes, true)) {
+            $num = $_POST[$clave];
+            $valor = (is_numeric($num) && (float)$num >= 0 && (float)$num <= 100) ? (string)(float)$num : '0';
+        } else {
+            $valor = sanitize($_POST[$clave]);
+        }
+        $db->prepare("UPDATE configuracion SET valor=? WHERE clave=?")->execute([$valor, $clave]);
     }
     $msg = 'Configuración guardada correctamente.';
 }

@@ -15,9 +15,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action']??'') === 'anular'
     $msg = 'Factura anulada.';
 }
 
-// Filtros
-$desde  = $_GET['desde']  ?? date('Y-m-01');
-$hasta  = $_GET['hasta']  ?? date('Y-m-d');
+// Filtros — desde/hasta se validan como fecha ISO en el origen (se imprimen crudos en
+// los value="" y en el href de exportar, asi que sin esto habia XSS reflejado).
+$fechaISO = fn($v, $def) => (is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) ? $v : $def;
+$desde  = $fechaISO($_GET['desde'] ?? null, date('Y-m-01'));
+$hasta  = $fechaISO($_GET['hasta'] ?? null, date('Y-m-d'));
 $estado = $_GET['estado'] ?? '';
 $q      = $_GET['q']      ?? '';
 

@@ -24,8 +24,66 @@ if (session_status() === PHP_SESSION_NONE) {
         'secure'   => true,
         'httponly' => true,
     ]);
+    // use_strict_mode: el servidor rechaza un ID de sesion que el no haya emitido, asi que
+    // un atacante no puede "fijar" un ID conocido en el navegador de otro visitante. Es la
+    // raiz real de la fijacion de sesion; el regenerate del login (abajo) la cierra ademas.
+    ini_set('session.use_strict_mode', 1);
     session_start();
 }
+
+// ============================================================
+// CSRF: verificacion de origen (defensa central, sin token por formulario)
+// ============================================================
+// La cookie de sesion es SameSite=None (obligatorio para el iframe de la demo), asi que
+// el navegador la adjunta tambien en peticiones cross-site: sin defensa, cualquier pagina
+// externa podia hacer que el navegador de un visitante logueado ejecutara acciones de
+// escritura. Como TODOS los endpoints de escritura incluyen este auth.php, se verifica
+// aqui, en un solo sitio, que las peticiones que cambian estado vengan de un origen
+// de confianza. No hace falta tocar formulario por formulario.
+function pos_csrf_hosts_confiables() {
+    $hosts = [strtolower($_SERVER['HTTP_HOST'] ?? ''), 'localhost', '127.0.0.1',
+              'portafolio-pixies.vercel.app', 'pos-restaurante-demo.onrender.com'];
+    $extra = getenv('CSRF_TRUSTED_HOSTS');
+    if ($extra) {
+        foreach (explode(',', $extra) as $h) $hosts[] = strtolower(trim($h));
+    }
+    return array_filter($hosts);
+}
+
+function pos_csrf_host_de($url) {
+    // extrae solo el host (sin esquema, puerto ni ruta) de un Origin o Referer
+    $host = parse_url((string)$url, PHP_URL_HOST);
+    return $host ? strtolower($host) : '';
+}
+
+function pos_csrf_verificar() {
+    $metodo = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+    if (!in_array($metodo, ['POST', 'PUT', 'DELETE', 'PATCH'], true)) {
+        return; // las lecturas no cambian estado
+    }
+    $origin  = $_SERVER['HTTP_ORIGIN']  ?? '';
+    $referer = $_SERVER['HTTP_REFERER'] ?? '';
+    // Si el navegador no manda ninguno (curl, integraciones no-navegador), no se bloquea:
+    // un CSRF real desde otra pestaña siempre lleva al menos uno de los dos.
+    if ($origin === '' && $referer === '') {
+        return;
+    }
+    $host = $origin !== '' ? pos_csrf_host_de($origin) : pos_csrf_host_de($referer);
+    if (!in_array($host, pos_csrf_hosts_confiables(), true)) {
+        http_response_code(403);
+        if (stripos($_SERVER['HTTP_ACCEPT'] ?? '', 'application/json') !== false
+            || stripos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') !== false) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => 'Origen no permitido']);
+        } else {
+            echo 'Origen no permitido';
+        }
+        exit;
+    }
+}
+
+// Se ejecuta al incluir auth.php (lo hacen todos los endpoints), antes de procesar nada.
+pos_csrf_verificar();
 
 // ============================================================
 // FUNCIONES DE AUTENTICACIÓN
@@ -73,6 +131,9 @@ function login($usuario, $password) {
     $user = $stmt->fetch();
 
     if ($user && password_verify($password, $user['password'])) {
+        // Rotar el ID de sesion al autenticar: si el navegador traia un PHPSESSID de antes
+        // (posible vector de fijacion), queda invalidado y se emite uno nuevo ya autenticado.
+        session_regenerate_id(true);
         $_SESSION['user_id']  = $user['id'];
         $_SESSION['user']     = $user;
         $_SESSION['role']     = $user['rol_nombre'];
